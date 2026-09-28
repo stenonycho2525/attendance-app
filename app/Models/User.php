@@ -42,4 +42,21 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+    private ?string $cachedAttendanceStatus = null;
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+    public function getAttendanceStatusAttribute(): string
+    {
+        if ($this->cachedAttendanceStatus === null) {
+            $todayRecord = $this->attendanceRecords()
+                ->where('date', now()->toDateString())
+                ->first();
+
+            $this->cachedAttendanceStatus = $todayRecord?->status ?? AttendanceRecord::STATUS_OFF_DUTY;
+        }
+
+        return $this->cachedAttendanceStatus;
+    }
 }
