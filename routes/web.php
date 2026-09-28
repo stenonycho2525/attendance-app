@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,6 +19,6 @@ Route::get('/', function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/attendance/list', fn() => 'タスク一覧（準備中）')->name('tasks.index');
-    Route::get('/categories', fn() => 'カテゴリー一覧（準備中）')->name('categories.index');
+    Route::get('/attendance', [AttendanceController::class, 'index']);
+    Route::post('/attendance', [AttendanceController::class, 'store']);
 });
