@@ -20,16 +20,37 @@ class StampCorrectionRequestController extends Controller
         }
         $applications = $query->get();
 
-        return view($user->isAdmin() ? 'admin.admin-application-list' : 'user.user-application-list', [
-            'pendingApplications' => $applications->where('status', StampCorrectionRequest::STATUS_PENDING),
-            'approvedApplications' => $applications->where('status', StampCorrectionRequest::STATUS_APPROVED),
+        if ($user->isAdmin()) {
+            return view('admin.admin-application-list', [
+                'applications' => $applications,
+            ]);
+        }
+
+        return view('user.user-application-list', [
+            'user' => $user,
+            'formattedApplications' => $applications->map(fn(StampCorrectionRequest $application) => [
+                'id' => $application->id,
+                'approval_status' => $application->approval_status,
+                'date' => $application->date->format('Y/m/d'),
+                'comment' => $application->comment,
+                'application_date' => $application->application_date->format('Y/m/d'),
+            ])->all(),
         ]);
+    }
+
+    public function redirectToAttendance(Request $request, StampCorrectionRequest $stampCorrectionRequest): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(!$user->isAdmin() && (int) $stampCorrectionRequest->user_id !== $user->id, 404);
+
+        return redirect('/attendance/' . $stampCorrectionRequest->attendance_record_id);
     }
 
     public function show(StampCorrectionRequest $stampCorrectionRequest): View
     {
         return view('admin.admin-application-detail', [
-            'application' => $stampCorrectionRequest->load(['user', 'breaks']),
+            'user' => $stampCorrectionRequest->user,
+            'application' => $stampCorrectionRequest,
         ]);
     }
 

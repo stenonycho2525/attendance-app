@@ -25,7 +25,7 @@ class AttendanceController extends Controller
         $now = Carbon::now()->locale('ja');
 
         return view('user.attendance-register', [
-            'status' => auth()->user()->attendance_status,
+            'user' => auth()->user(),
             'formattedDate' => $now->isoFormat('YYYY年M月D日(ddd)'),
             'formattedTime' => $now->format('H:i'),
         ]);
@@ -59,22 +59,48 @@ class AttendanceController extends Controller
     }
     public function show(Request $request, AttendanceRecord $attendanceRecord): View
     {
-        $this->ensureOwner($request->user(), $attendanceRecord);
+        $user = $request->user();
+        $data = $this->attendanceService->detailData(
+            $attendanceRecord->load('breaks'),
+            $attendanceRecord->pendingCorrectionRequest()
+        );
+
+        if ($user->isAdmin()) {
+            return view('admin.admin-detail', [
+                'user' => $attendanceRecord->user,
+                'attendanceRecord' => $data,
+            ]);
+        }
+
+        $this->ensureOwner($user, $attendanceRecord);
 
         return view('user.user-detail', [
-            'user' => $request->user(),
-            'data' => $this->attendanceService->detailData(
-                $attendanceRecord->load('breaks'),
-                $attendanceRecord->pendingCorrectionRequest()
-            ),
+            'user' => $user,
+            'data' => $data,
         ]);
     }
-    public function requestCorrection(AttendanceCorrectionRequest $request, AttendanceRecord $attendanceRecord): RedirectResponse
+    public function update(AttendanceCorrectionRequest $request, AttendanceRecord $attendanceRecord): RedirectResponse
     {
-        $this->ensureOwner($request->user(), $attendanceRecord);
+        $user = $request->user();
+
+        if (!$user->isAdmin()) {
+            $this->ensureOwner($user, $attendanceRecord);
+        }
 
         if ($attendanceRecord->pendingCorrectionRequest()) {
-            return redirect('/attendance/detail/' . $attendanceRecord->id);
+            return redirect('/attendance/' . $attendanceRecord->id);
+        }
+
+        if ($user->isAdmin()) {
+            $this->attendanceService->overwrite(
+                $attendanceRecord,
+                $request->input('new_clock_in'),
+                $request->input('new_clock_out'),
+                $request->breaks(),
+                $request->input('comment'),
+            );
+
+            return redirect('/attendance/' . $attendanceRecord->id);
         }
 
         DB::transaction(function () use ($request, $attendanceRecord) {
@@ -90,7 +116,7 @@ class AttendanceController extends Controller
             $application->breaks()->createMany($request->breaks());
         });
 
-        return redirect('/attendance/detail/' . $attendanceRecord->id);
+        return redirect('/attendance/' . $attendanceRecord->id);
     }
     private function ensureOwner(User $user, AttendanceRecord $attendanceRecord): void
     {

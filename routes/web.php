@@ -25,8 +25,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/attendance', [AttendanceController::class, 'index']);
     Route::post('/attendance', [AttendanceController::class, 'store']);
     Route::get('/attendance/list', [AttendanceController::class, 'list']);
-    Route::get('/attendance/detail/{attendanceRecord}', [AttendanceController::class, 'show']);
-    Route::post('/attendance/detail/{attendanceRecord}', [AttendanceController::class, 'requestCorrection']);
+    Route::get('/attendance/{attendanceRecord}', [AttendanceController::class, 'show'])->whereNumber('attendanceRecord');
+    Route::post('/attendance/{attendanceRecord}', [AttendanceController::class, 'update'])->whereNumber('attendanceRecord');
+    Route::get('/application/{stampCorrectionRequest}', [StampCorrectionRequestController::class, 'redirectToAttendance']);
 
     Route::get('/stamp_correction_request/list', [StampCorrectionRequestController::class, 'index']);
 });
@@ -40,8 +41,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/admin/logout', [AdminAuthController::class, 'destroy']);
     Route::get('/admin/attendance/list', [AdminAttendanceController::class, 'index']);
     Route::get('/admin/attendance/staff/{user}', [AdminAttendanceController::class, 'staff']);
-    Route::get('/admin/attendance/{attendanceRecord}', [AdminAttendanceController::class, 'show']);
-    Route::post('/admin/attendance/{attendanceRecord}', [AdminAttendanceController::class, 'update']);
     Route::get('/admin/staff/list', [StaffController::class, 'index']);
     Route::get('/stamp_correction_request/approve/{stampCorrectionRequest}', [StampCorrectionRequestController::class, 'show']);
     Route::post('/stamp_correction_request/approve/{stampCorrectionRequest}', [StampCorrectionRequestController::class, 'approve']);

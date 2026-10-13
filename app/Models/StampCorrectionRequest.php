@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class StampCorrectionRequest extends Model
 {
@@ -43,8 +44,38 @@ class StampCorrectionRequest extends Model
         return $this->hasMany(StampCorrectionRequestBreak::class)->orderBy('break_in');
     }
 
+    public function proposalBreaks(): HasMany
+    {
+        return $this->breaks();
+    }
+
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    public function getApprovalStatusAttribute(): string
+    {
+        return $this->status;
+    }
+
+    public function getApplicationDateAttribute(): Carbon
+    {
+        return $this->created_at;
+    }
+
+    public function getNewDateAttribute(): Carbon
+    {
+        return $this->date;
+    }
+
+    public function getNewClockInAttribute(): string
+    {
+        return AttendanceRecord::toHourMinute($this->clock_in);
+    }
+
+    public function getNewClockOutAttribute(): string
+    {
+        return AttendanceRecord::toHourMinute($this->clock_out);
     }
 }

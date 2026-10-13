@@ -56,7 +56,7 @@ class AdminTest extends TestCase
             ->assertSee('8:00')
             ->assertSee('?date=2026-10-12')
             ->assertSee('?date=2026-10-14')
-            ->assertSee('/admin/attendance/' . $this->record->id);
+            ->assertSee('/attendance/' . $this->record->id);
 
         $this->get('/admin/attendance/list?date=2026-10-12')
             ->assertSee('2026/10/12')
@@ -65,23 +65,23 @@ class AdminTest extends TestCase
 
     public function test_admin_can_update_attendance_directly(): void
     {
-        $this->actingAs($this->admin)->get('/admin/attendance/' . $this->record->id)
+        $this->actingAs($this->admin)->get('/attendance/' . $this->record->id)
             ->assertSee('山田 太郎')
             ->assertSee('10月13日');
 
-        $this->post('/admin/attendance/' . $this->record->id, [
+        $this->post('/attendance/' . $this->record->id, [
             'new_clock_in' => '18:30',
             'new_clock_out' => '18:00',
             'comment' => '修正',
         ])->assertSessionHasErrors(['new_clock_in' => '出勤時間もしくは退勤時間が不適切な値です']);
 
-        $this->post('/admin/attendance/' . $this->record->id, [
+        $this->post('/attendance/' . $this->record->id, [
             'new_clock_in' => '10:00',
             'new_clock_out' => '19:00',
             'new_break_in' => ['12:30', ''],
             'new_break_out' => ['13:30', ''],
             'comment' => '打刻漏れのため',
-        ])->assertRedirect('/admin/attendance/' . $this->record->id);
+        ])->assertRedirect('/attendance/' . $this->record->id);
 
         $this->record->refresh();
         $this->assertSame('10:00:00', $this->record->clock_in);
@@ -104,7 +104,7 @@ class AdminTest extends TestCase
             ->assertSee('山田 太郎さんの勤怠')
             ->assertSee('2026/10')
             ->assertSee('10/13(火)')
-            ->assertSee('/admin/attendance/' . $this->record->id);
+            ->assertSee('/attendance/' . $this->record->id);
 
         $this->get('/admin/attendance/staff/' . $this->staff->id . '?date=2026-09')->assertSee('2026/09');
     }
@@ -122,8 +122,16 @@ class AdminTest extends TestCase
         ]);
         $application->breaks()->create(['break_in' => '11:30:00', 'break_out' => '12:30:00']);
 
-        $this->actingAs($this->admin)->get('/admin/attendance/' . $this->record->id)
-            ->assertSee('承認待ちのため修正はできません。');
+        $this->actingAs($this->admin)->get('/attendance/' . $this->record->id)
+            ->assertSee('08:00')
+            ->assertSee('11:30');
+
+        $this->post('/attendance/' . $this->record->id, [
+            'new_clock_in' => '10:00',
+            'new_clock_out' => '19:00',
+            'comment' => '修正',
+        ])->assertRedirect('/attendance/' . $this->record->id);
+        $this->assertSame('09:00:00', $this->record->fresh()->clock_in);
 
         $this->get('/stamp_correction_request/list')
             ->assertSee('山田 太郎')

@@ -67,7 +67,7 @@ class AttendanceTest extends TestCase
             ->assertSee('10/01(木)')
             ->assertSee('09:00')
             ->assertSee('8:00')
-            ->assertSee('/attendance/detail/' . $record->id)
+            ->assertSee('/attendance/' . $record->id)
             ->assertSee('?date=2026-09')
             ->assertSee('?date=2026-11');
 
@@ -79,20 +79,20 @@ class AttendanceTest extends TestCase
         $record = $this->createRecord('2026-10-01');
         $other = AttendanceRecord::create(['user_id' => User::factory()->create()->id, 'date' => '2026-10-01', 'clock_in' => '09:00:00']);
 
-        $this->actingAs($this->user)->get('/attendance/detail/' . $record->id)
+        $this->actingAs($this->user)->get('/attendance/' . $record->id)
             ->assertSee($this->user->name)
             ->assertSee('2026年')
             ->assertSee('10月1日')
             ->assertSee('12:00')
             ->assertSee('new_break_in[1]', false);
 
-        $this->get('/attendance/detail/' . $other->id)->assertNotFound();
+        $this->get('/attendance/' . $other->id)->assertNotFound();
     }
 
     public function test_correction_validation_messages(): void
     {
         $record = $this->createRecord('2026-10-01');
-        $url = '/attendance/detail/' . $record->id;
+        $url = '/attendance/' . $record->id;
         $this->actingAs($this->user);
 
         $this->post($url, $this->correction(['new_clock_in' => '19:00']))
@@ -118,15 +118,15 @@ class AttendanceTest extends TestCase
         $record = $this->createRecord('2026-10-01');
         $this->actingAs($this->user);
 
-        $this->post('/attendance/detail/' . $record->id, $this->correction())
-            ->assertRedirect('/attendance/detail/' . $record->id);
+        $this->post('/attendance/' . $record->id, $this->correction())
+            ->assertRedirect('/attendance/' . $record->id);
 
         $application = StampCorrectionRequest::first();
         $this->assertSame(StampCorrectionRequest::STATUS_PENDING, $application->status);
         $this->assertSame(2, $application->breaks()->count());
 
-        $this->get('/attendance/detail/' . $record->id)
-            ->assertSee('承認待ちのため修正はできません。')
+        $this->get('/attendance/' . $record->id)
+            ->assertSee('承認待ちのため修正できません')
             ->assertSee('08:30')
             ->assertDontSee('type="submit"', false);
 
@@ -134,7 +134,9 @@ class AttendanceTest extends TestCase
             ->assertSee('承認待ち')
             ->assertSee('遅延のため')
             ->assertSee('2026/10/01')
-            ->assertSee('/attendance/detail/' . $record->id);
+            ->assertSee('/application/' . $application->id);
+
+        $this->get('/application/' . $application->id)->assertRedirect('/attendance/' . $record->id);
     }
 
     private function createRecord(string $date): AttendanceRecord

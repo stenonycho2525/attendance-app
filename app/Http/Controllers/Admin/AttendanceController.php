@@ -3,11 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Models\AttendanceRecord;
 use App\Models\User;
 use App\Services\AttendanceService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -31,34 +29,9 @@ class AttendanceController extends Controller
             'date' => $date,
             'previousDay' => $date->copy()->subDay()->toDateString(),
             'nextDay' => $date->copy()->addDay()->toDateString(),
+            'users' => User::where('admin_status', false)->orderBy('id')->get(),
             'attendanceRecords' => $attendanceRecords,
         ]);
-    }
-
-    public function show(AttendanceRecord $attendanceRecord): View
-    {
-        return view('admin.admin-detail', [
-            'user' => $attendanceRecord->user,
-            'attendanceRecord' => $this->attendanceService->detailData(
-                $attendanceRecord->load('breaks'),
-                $attendanceRecord->pendingCorrectionRequest()
-            ),
-        ]);
-    }
-
-    public function update(AttendanceCorrectionRequest $request, AttendanceRecord $attendanceRecord): RedirectResponse
-    {
-        if (!$attendanceRecord->pendingCorrectionRequest()) {
-            $this->attendanceService->overwrite(
-                $attendanceRecord,
-                $request->input('new_clock_in'),
-                $request->input('new_clock_out'),
-                $request->breaks(),
-                $request->input('comment'),
-            );
-        }
-
-        return redirect('/admin/attendance/' . $attendanceRecord->id);
     }
 
     public function staff(Request $request, User $user): View
