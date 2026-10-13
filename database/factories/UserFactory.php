@@ -32,6 +32,13 @@ class UserFactory extends Factory
         ];
     }
 
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'admin_status' => true,
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

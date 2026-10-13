@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,6 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'admin_status',
     ];
 
     /**
@@ -41,22 +43,26 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'admin_status' => 'boolean',
     ];
-    private ?string $cachedAttendanceStatus = null;
     public function attendanceRecords(): HasMany
     {
         return $this->hasMany(AttendanceRecord::class);
     }
+    public function stampCorrectionRequests(): HasMany
+    {
+        return $this->hasMany(StampCorrectionRequest::class);
+    }
+    public function isAdmin(): bool
+    {
+        return (bool) $this->admin_status;
+    }
     public function getAttendanceStatusAttribute(): string
     {
-        if ($this->cachedAttendanceStatus === null) {
-            $todayRecord = $this->attendanceRecords()
-                ->where('date', now()->toDateString())
-                ->first();
+        $todayRecord = $this->attendanceRecords()
+            ->where('date', now()->toDateString())
+            ->first();
 
-            $this->cachedAttendanceStatus = $todayRecord?->status ?? AttendanceRecord::STATUS_OFF_DUTY;
-        }
-
-        return $this->cachedAttendanceStatus;
+        return $todayRecord?->status ?? AttendanceRecord::STATUS_OFF_DUTY;
     }
 }

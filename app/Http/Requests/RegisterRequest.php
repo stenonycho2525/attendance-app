@@ -22,7 +22,6 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8'],
@@ -37,7 +36,9 @@ class RegisterRequest extends FormRequest
             'email.email' => 'メールアドレスはメール形式で入力してください',
             'password.required' => 'パスワードを入力してください',
             'password.min' => 'パスワードは8文字以上で入力してください',
+            'password_confirmation.required' => 'パスワードと一致しません',
             'password_confirmation.same' => 'パスワードと一致しません',
+            'email.unique' => 'このメールアドレスは既に登録されています',
         ];
     }
 }

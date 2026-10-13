@@ -2,43 +2,35 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\AttendanceCorrectionRequest;
 use App\Http\Requests\AttendanceStampRequest;
 use App\Models\AttendanceRecord;
+use App\Models\StampCorrectionRequest;
 use App\Models\User;
+use App\Services\AttendanceService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function __construct(private AttendanceService $attendanceService)
     {
-        $now = Carbon::now();
+    }
+
+    public function index(): View
+    {
+        $now = Carbon::now()->locale('ja');
 
         return view('user.attendance-register', [
-            'user' => auth()->user(),
+            'status' => auth()->user()->attendance_status,
             'formattedDate' => $now->isoFormat('YYYY年M月D日(ddd)'),
             'formattedTime' => $now->format('H:i'),
         ]);
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(AttendanceStampRequest $request)
+    public function store(AttendanceStampRequest $request): RedirectResponse
     {
         $user = $request->user();
         $now = Carbon::now();
@@ -54,37 +46,55 @@ class AttendanceController extends Controller
 
         return redirect('/attendance');
     }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function list(Request $request): View
     {
-        //
+        $date = AttendanceService::parseMonth($request->query('date'));
+
+        return view('user.user-attendance-list', [
+            'date' => $date,
+            'previousMonth' => $date->copy()->subMonth()->format('Y-m'),
+            'nextMonth' => $date->copy()->addMonth()->format('Y-m'),
+            'formattedAttendanceRecords' => $this->attendanceService->monthlyRows($request->user(), $date),
+        ]);
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function show(Request $request, AttendanceRecord $attendanceRecord): View
     {
-        //
+        $this->ensureOwner($request->user(), $attendanceRecord);
+
+        return view('user.user-detail', [
+            'user' => $request->user(),
+            'data' => $this->attendanceService->detailData(
+                $attendanceRecord->load('breaks'),
+                $attendanceRecord->pendingCorrectionRequest()
+            ),
+        ]);
     }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function requestCorrection(AttendanceCorrectionRequest $request, AttendanceRecord $attendanceRecord): RedirectResponse
     {
-        //
+        $this->ensureOwner($request->user(), $attendanceRecord);
+
+        if ($attendanceRecord->pendingCorrectionRequest()) {
+            return redirect('/attendance/detail/' . $attendanceRecord->id);
+        }
+
+        DB::transaction(function () use ($request, $attendanceRecord) {
+            $application = StampCorrectionRequest::create([
+                'attendance_record_id' => $attendanceRecord->id,
+                'user_id' => $request->user()->id,
+                'date' => $attendanceRecord->date,
+                'clock_in' => $request->input('new_clock_in'),
+                'clock_out' => $request->input('new_clock_out'),
+                'comment' => $request->input('comment'),
+                'status' => StampCorrectionRequest::STATUS_PENDING,
+            ]);
+            $application->breaks()->createMany($request->breaks());
+        });
+
+        return redirect('/attendance/detail/' . $attendanceRecord->id);
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    private function ensureOwner(User $user, AttendanceRecord $attendanceRecord): void
     {
-        //
+        abort_if((int) $attendanceRecord->user_id !== $user->id, 404);
     }
     private function clockIn(User $user, Carbon $now): void
     {

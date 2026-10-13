@@ -35,14 +35,10 @@
                 <p class="table__header--item">詳細</p>
             </th>
         </tr>
-        @foreach ($users as $user)
-        @php
-            $attendance = $attendanceRecords->where('user_id', $user->id)->first();
-        @endphp
-        @if ($attendance)
+        @foreach ($attendanceRecords as $attendance)
         <tr class="table__row">
             <td class="table__description">
-                <p class="table__description--item">{{ $user->name }}</p>
+                <p class="table__description--item">{{ $attendance->user->name }}</p>
             </td>
             <td class="table__description">
                 <p class="table__description--item">{{ $attendance->clock_in ? Carbon\Carbon::parse($attendance->clock_in)->format('H:i') : '' }}</p>
@@ -57,10 +53,9 @@
                 <p class="table__description--item">{{ $attendance->total_time ? Carbon\Carbon::parse($attendance->total_time)->format('G:i') : '' }}</p>
             </td>
             <td class="table__description">
-                <a class="table__item--detail-link" href="{{ url('/attendance/' . $attendance['id']) }}">詳細</a>
+                <a class="table__item--detail-link" href="{{ url('/admin/attendance/' . $attendance->id) }}">詳細</a>
             </td>
         </tr>
-        @endif
         @endforeach
     </table>
 </div>
