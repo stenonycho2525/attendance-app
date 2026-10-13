@@ -15,10 +15,100 @@
         <input class="application__tab--input" id="tab2" type="radio" name="tab_item">
         <label class="application__tab--label" for="tab2">承認済み</label>
         <div class="tab__content" id="content1">
-            @include('partials.application-table', ['applications' => $pendingApplications, 'isAdmin' => true])
+            <table class="table">
+                <tr class="table__row">
+                    <th class="table__header">
+                        <p class="table__header--item">状態</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">名前</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">対象日時</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">申請理由</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">申請日時</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">詳細</p>
+                    </th>
+                </tr>
+                @foreach ($applications as $application)
+                @if ($application->approval_status === '承認待ち')
+                <tr class="table__row">
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->approval_status }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->user->name }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->AttendanceRecord->date)->format('Y/m/d') }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->comment }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->application_date)->format('Y/m/d') }}</p>
+                    </td>
+                    <td class="table__description">
+                        <a class="table__item--detail-link" href="{{ url('/stamp_correction_request/approve/' . $application['id']) }}">詳細</a>
+                    </td>
+                </tr>
+                @endif
+                @endforeach
+            </table>
         </div>
         <div class="tab__content" id="content2">
-            @include('partials.application-table', ['applications' => $approvedApplications, 'isAdmin' => true])
+            <table class="table">
+                <tr class="table__row">
+                    <th class="table__header">
+                        <p class="table__header--item">状態</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">名前</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">対象日時</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">申請理由</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">申請日時</p>
+                    </th>
+                    <th class="table__header">
+                        <p class="table__header--item">詳細</p>
+                    </th>
+                </tr>
+                @foreach ($applications as $application)
+                @if ($application->approval_status === '承認済み')
+                <tr class="table__row">
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->approval_status }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->user->name }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->AttendanceRecord->date)->format('Y/m/d') }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ $application->comment }}</p>
+                    </td>
+                    <td class="table__description">
+                        <p class="table__description--item">{{ \Carbon\Carbon::parse($application->application_date)->format('Y/m/d') }}</p>
+                    </td>
+                    <td class="table__description">
+                        <a class="table__item--detail-link" href="{{ url('/stamp_correction_request/approve/' . $application['id']) }}">詳細</a>
+                    </td>
+                </tr>
+                @endif
+                @endforeach
+            </table>
         </div>
     </div>
 </div>
