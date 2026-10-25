@@ -118,3 +118,19 @@
 .table__row:not(:last-child) {
     border-bottom: 2px solid #E1E1E1;
 }
+
+.csv-button {
+    margin: 0 auto;
+    margin-top: 50px;
+    max-width: 100vh;
+    text-align: right;
+}
+
+.csv-button__submit {
+    background: #000;
+    border: none;
+    border-radius: 5px;
+    color: #FFF;
+    font-size: 16px;
+    padding: 5px 15px;
+}
